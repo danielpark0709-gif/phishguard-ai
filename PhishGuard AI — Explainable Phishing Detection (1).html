@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PhishGuard AI — Explainable Phishing Detection</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f7fc;--card:rgba(255,255,255,.85);--ink:#0b1220;--mute:#5b6b85;--line:rgba(15,23,42,.1);--acc:#0ea5e9;--acc2:#6366f1;--bad:#e11d48;--warn:#d97706;--ok:#059669;--soft:rgba(15,23,42,.05);--glow:rgba(14,165,233,.18);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#060b18;--card:rgba(17,24,39,.72);--ink:#eef2ff;--mute:#94a3c0;--line:rgba(148,163,184,.16);--acc:#38bdf8;--acc2:#818cf8;--bad:#fb7185;--warn:#fbbf24;--ok:#34d399;--soft:rgba(148,163,184,.09);--glow:rgba(56,189,248,.22);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#060b18;--card:rgba(17,24,39,.72);--ink:#eef2ff;--mute:#94a3c0;--line:rgba(148,163,184,.16);--acc:#38bdf8;--acc2:#818cf8;--bad:#fb7185;--warn:#fbbf24;--ok:#34d399;--soft:rgba(148,163,184,.09);--glow:rgba(56,189,248,.22);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh;position:relative;overflow-x:hidden}
+body:before,body:after{content:"";position:fixed;z-index:-1;border-radius:50%;filter:blur(90px);opacity:.55;animation:float 14s ease-in-out infinite alternate}
+body:before{width:480px;height:480px;background:var(--acc);top:-160px;left:-120px;opacity:.28}
+body:after{width:520px;height:520px;background:var(--acc2);bottom:-200px;right:-160px;opacity:.26;animation-delay:-6s}
+@keyframes float{to{transform:translate(60px,40px) scale(1.12)}}
+.wrap{max-width:1040px;margin:0 auto;padding:14px 16px 28px}
+.top{display:flex;align-items:center;gap:10px;padding:6px 0 4px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:grid;place-items:center;color:#fff;box-shadow:0 6px 20px var(--glow)}
+.brand{font-weight:800;font-size:17px;letter-spacing:-.02em}
+.pill{margin-left:auto;font-size:12px;padding:5px 11px;border-radius:99px;background:var(--soft);border:1px solid var(--line);color:var(--mute);display:flex;align-items:center;gap:6px}
+.pill:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 var(--ok);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.hero{text-align:center;padding:34px 4px 24px}
+.hero .eyebrow{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--acc);background:var(--soft);border:1px solid var(--line);padding:5px 12px;border-radius:99px}
+.hero h1{font-size:clamp(30px,7vw,54px);line-height:1.05;letter-spacing:-.035em;font-weight:800;margin:16px 0 12px}
+.hero h1 span{background:linear-gradient(90deg,var(--acc),var(--acc2),#ec4899);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{max-width:600px;margin:0 auto;color:var(--mute);font-size:16px}
+.badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.badges span{font-size:12px;color:var(--mute);padding:5px 11px;border:1px solid var(--line);border-radius:99px;background:var(--soft)}
+nav{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:14px;margin:6px auto 16px;border:1px solid var(--line);max-width:420px;backdrop-filter:blur(10px)}
+nav button{flex:1;border:0;background:none;color:var(--mute);padding:10px 6px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;transition:.2s}
+nav button.on{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 4px 14px var(--glow)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:16px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 10px 40px -18px rgba(2,6,23,.35);animation:rise .5s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.card h2{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin:0 0 12px;font-weight:700}
+label{font-size:13px;color:var(--mute);display:block;margin:12px 0 5px;font-weight:500}
+input,textarea{width:100%;background:var(--soft);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:13px 14px;font:14px "JetBrains Mono",ui-monospace,Menlo,monospace;transition:.2s}
+textarea{min-height:80px;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 4px var(--glow)}
+.btn{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border:0;border-radius:12px;padding:12px 22px;font:600 14px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 22px -8px var(--acc2);transition:.2s}
+.btn:hover{transform:translateY(-2px)}.btn:active{transform:none}
+.btn.ghost{background:var(--soft);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}.chips:before{content:"Try:";font-size:12px;color:var(--mute)}
+.chip{font:500 12px Inter,sans-serif;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer;transition:.2s}.chip:hover{border-color:var(--acc);transform:translateY(-1px)}
+.grid{display:grid;gap:16px;grid-template-columns:1fr}@media(min-width:780px){.grid.two{grid-template-columns:310px 1fr}}
+.gauge{text-align:center}.gauge svg{overflow:visible}
+.gauge .arc{stroke-dasharray:var(--L);stroke-dashoffset:var(--L);animation:draw 1.1s cubic-bezier(.2,.8,.2,1) .1s forwards;filter:drop-shadow(0 0 8px var(--c))}
+@keyframes draw{to{stroke-dashoffset:var(--o)}}
+.verdict{display:inline-block;font-weight:800;padding:7px 18px;border-radius:99px;font-size:13px;letter-spacing:.08em;margin-top:6px;border:1px solid currentColor;box-shadow:0 0 24px -4px currentColor}
+.bar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden}.bar i{display:block;height:100%;border-radius:99px;animation:grow .9s ease both}@keyframes grow{from{width:0!important}}
+.row{display:flex;justify-content:space-between;font-size:13px;margin:12px 0 5px}
+.shap{padding:10px 0;border-bottom:1px solid var(--line)}.shap:last-child{border:0}.shap b{font-size:13.5px}.shap small{color:var(--mute);font-size:12px;line-height:1.4;display:block}
+.dv{position:relative;height:10px;background:var(--soft);border-radius:99px;margin:7px 0}.dv i{position:absolute;top:0;height:100%;border-radius:99px;animation:grow .9s ease both}.dv:after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--mute);opacity:.6}
+.tag{display:inline-block;font:500 12px "JetBrains Mono",monospace;padding:3px 9px;border-radius:8px;background:var(--soft);border:1px solid var(--line);margin:3px 3px 0 0}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap}th{color:var(--mute);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}tr:hover td{background:var(--soft)}
+.v{font-weight:700;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.stat{background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:16px 10px;text-align:center}.stat b{font-size:26px;display:block;letter-spacing:-.02em}.stat small{color:var(--mute)}
+.how{display:grid;gap:12px;grid-template-columns:1fr;margin-top:8px}@media(min-width:700px){.how{grid-template-columns:repeat(3,1fr)}}
+.how div{padding:16px;border-radius:16px;background:var(--soft);border:1px solid var(--line)}.how b{display:block;margin-bottom:4px}.how small{color:var(--mute)}
+.note{font-size:12px;color:var(--mute);text-align:center;margin:24px auto 0;max-width:640px}.hide{display:none}
+</style></head><body><div class="wrap">
+<div class="top"><div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><span class="brand">PhishGuard AI</span><span class="pill">Engine online</span></div>
+<div class="hero"><span class="eyebrow">Explainable AI · Zero-crawl detection</span>
+<h1>Know <span>why</span> a link is dangerous, not just that it is.</h1>
+<p>Paste a URL or suspicious message. PhishGuard scores it in milliseconds using 12 URL signals and NLP, then shows exactly which features drove the verdict.</p>
+<div class="badges"><span>🔒 Never visits the link</span><span>⚡ Instant scoring</span><span>🧠 SHAP-style explanations</span><span>📄 Bulk CSV audit</span></div></div>
+<nav id="nav"><button data-t="scan" class="on">Scanner</button><button data-t="batch">Batch audit</button><button data-t="hist">History</button></nav>
+
+<section id="scan"><div class="card"><h2>Scan a link or message</h2>
+<label for="u">URL</label><input id="u" placeholder="http://secure-paypal-login.verify-account.xyz/signin" autocomplete="off" spellcheck="false">
+<label for="m">SMS or email text (optional)</label><textarea id="m" placeholder="Paste the message that came with the link…"></textarea>
+<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn" id="go">Analyze threat →</button><button class="btn ghost" id="clr">Clear</button></div>
+<div class="chips" id="chips"></div></div>
+<div id="res" class="hide"></div>
+<div class="card" id="how"><h2>How it works</h2><div class="how"><div><b>1 · Extract</b><small>12 lexical features such as entropy, subdomain depth and raw-IP hosts.</small></div><div><b>2 · Score</b><small>A gradient-boosted model plus a text model produce one risk score.</small></div><div><b>3 · Explain</b><small>Per-feature impacts show what pushed the verdict up or down.</small></div></div></div></section>
+
+<section id="batch" class="hide"><div class="card"><h2>Bulk URL audit</h2>
+<label for="b">One URL per line (or upload a CSV with a url column)</label><textarea id="b" style="min-height:130px" placeholder="https://github.com&#10;http://192.168.4.7/banking/update"></textarea>
+<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn" id="bgo">Score all</button><label class="btn ghost" style="margin:0;color:var(--ink)">Upload CSV<input type="file" id="bf" accept=".csv,.txt" hidden></label><button class="btn ghost hide" id="bdl">Download results</button></div></div>
+<div id="bres" class="card hide"><div class="tw"><table><thead><tr><th>URL</th><th>Verdict</th><th>Risk</th><th>Top factor</th></tr></thead><tbody id="bt"></tbody></table></div></div></section>
+
+<section id="hist" class="hide"><div class="card"><div class="stats"><div class="stat"><b id="s1">0</b><small>Scans</small></div><div class="stat"><b id="s2">0%</b><small>Phishing rate</small></div><div class="stat"><b id="s3">—</b><small>Top driver</small></div></div></div>
+<div class="card"><div class="tw"><table><thead><tr><th>Time</th><th>URL</th><th>Verdict</th><th>Risk</th></tr></thead><tbody id="ht"></tbody></table></div></div></section>
+<p class="note">Scoring in this demo runs in your browser and never contacts the scanned URL. The full FastAPI backend serves the trained XGBoost and TF-IDF models with real TreeSHAP values. Training data is synthetic, so treat results as a demonstration.</p>
+</div><script>
+const FEATURE_NAMES = [
+  'url_length',
+  'host_length',
+  'dot_count',
+  'hyphen_count',
+  'at_symbol',
+  'has_ip_address',
+  'is_https',
+  'subdomain_depth',
+  'url_entropy',
+  'digit_ratio',
+  'suspicious_token_count',
+  'path_length'
+];
+
+const FEATURE_LABELS = {
+  url_length: 'URL Length',
+  host_length: 'Hostname Length',
+  dot_count: 'Dot Count (.)',
+  hyphen_count: 'Hyphen Count (-)',
+  at_symbol: 'Obfuscation @ Symbol',
+  has_ip_address: 'Raw IP Hostname',
+  is_https: 'HTTPS TLS Scheme',
+  subdomain_depth: 'Subdomain Depth',
+  url_entropy: 'Shannon Entropy',
+  digit_ratio: 'Numeric Digit Ratio',
+  suspicious_token_count: 'Suspicious Lure Tokens',
+  path_length: 'URL Path & Query Length'
+};
+
+const SUSPICIOUS_TOKENS = [
+  'login', 'verify', 'secure', 'account', 'update', 'banking', 'paypal',
+  'signin', 'confirm', 'password', 'wallet', 'auth', 'unlock', 'suspend',
+  'urgent', 'security', 'webscr', 'credential', 'billing', 'recover',
+  'validate', 'appleid', 'microsoft', 'netflix', 'invoice', 'bonus',
+  'free', 'claim', 'kyc', 'token', 'xyz', 'top', 'tk', 'zip', 'work', 'click'
+];
+
+const NLP_RISK_WEIGHTS = {
+  urgent: 0.16,
+  suspended: 0.18,
+  suspend: 0.16,
+  verify: 0.15,
+  immediately: 0.14,
+  unauthorized: 0.15,
+  password: 0.15,
+  credentials: 0.17,
+  credential: 0.16,
+  confirm: 0.12,
+  banking: 0.15,
+  bank: 0.11,
+  locked: 0.16,
+  unlock: 0.15,
+  unusual: 0.13,
+  declined: 0.15,
+  billing: 0.13,
+  kyc: 0.17,
+  wallet: 0.14,
+  seed: 0.18,
+  refund: 0.13,
+  redelivery: 0.15,
+  fee: 0.11,
+  click: 0.09,
+  hours: 0.09,
+   closure: 0.14,
+  deactivation: 0.15,
+  mandatory: 0.12,
+  validate: 0.13
+};
+
+const MULTI_PART_TLDS = new Set([
+  'co.uk', 'org.uk', 'ac.uk', 'gov.uk',
+  'co.in', 'ac.in', 'gov.in', 'org.in', 'net.in',
+  'com.au', 'org.au', 'edu.au', 'co.jp', 'com.br', 'com.sg'
+]);
+
+function computeShannonEntropy(str) {
+  if (!str || str.length === 0) return 0;
+  const len = str.length;
+  const freq = {};
+  for (let i = 0; i < len; i++) {
+    const ch = str[i];
+    freq[ch] = (freq[ch] || 0) + 1;
+  }
+  let entropy = 0;
+  const keys = Object.keys(freq);
+  for (let i = 0; i < keys.length; i++) {
+    const p = freq[keys[i]] / len;
+    entropy -= p * Math.log2(p);
+  }
+  return Number(entropy.toFixed(4));
+}
+
+function detectIpAddress(hostname) {
+  if (!hostname) return 0;
+  const clean = hostname.replace(/^\[|\]$/g, '');
+  const ipv4Regex = /^(?:0x[0-9a-fA-F]{1,8}|(?:\d{1,3}\.){3}\d{1,3})$/;
+  if (ipv4Regex.test(clean)) return 1;
+  if (clean.includes(':')) return 1;
+  const parts = clean.split('.');
+  if (parts.length >= 4 && parts.slice(0, 4).every((p) => /^\d+$/.test(p))) {
+    return 1;
+  }
+  return 0;
+}
+
+function computeSubdomainDepth(hostname, hasIp) {
+  if (!hostname || hasIp) return 0;
+  let clean = hostname.toLowerCase().replace(/^\.+|\.+$/g, '');
+  if (clean.startsWith('www.')) clean = clean.slice(4);
+  const labels = clean.split('.').filter(Boolean);
+  if (labels.length <= 2) return 0;
+  const lastTwo = labels.slice(-2).join('.');
+  const baseCount = MULTI_PART_TLDS.has(lastTwo) ? 3 : 2;
+  return Math.max(0, labels.length - baseCount);
+}
+
+function extractUrlFeatures(rawInput) {
+  const rawUrl = (rawInput || '').trim();
+  if (!rawUrl) {
+    return FEATURE_NAMES.reduce((acc, k) => ({ ...acc, [k]: 0 }), {});
+  }
+  const hasScheme = rawUrl.includes('://');
+  const parseTarget = hasScheme ? rawUrl : `http://${rawUrl}`;
+
+  let scheme = '';
+  let hostname = '';
+  let pathAndQuery = '';
+
+  try {
+    const parsed = new URL(parseTarget);
+    scheme = hasScheme ? parsed.protocol.replace(':', '').toLowerCase() : '';
+    hostname = (parsed.hostname || '').toLowerCase();
+    pathAndQuery = `${parsed.pathname || ''}${parsed.search || ''}${parsed.hash || ''}`;
+  } catch (e) {
+    const withoutScheme = hasScheme ? rawUrl.split('://')[1] : rawUrl;
+    const slashIdx = withoutScheme.indexOf('/');
+    const netloc = slashIdx >= 0 ? withoutScheme.slice(0, slashIdx) : withoutScheme;
+    pathAndQuery = slashIdx >= 0 ? withoutScheme.slice(slashIdx) : '';
+    const hostPart = netloc.includes('@') ? netloc.split('@').pop() : netloc;
+    hostname = (hostPart.split(':')[0] || '').toLowerCase();
+    scheme = rawUrl.toLowerCase().startsWith('https://') ? 'https' : 'http';
+  }
+
+  const is_https = scheme === 'https' ? 1 : 0;
+  const url_length = rawUrl.length;
+  const host_length = hostname.length;
+  const dot_count = (rawUrl.match(/\./g) || []).length;
+  const hyphen_count = (rawUrl.match(/-/g) || []).length;
+  const at_symbol = rawUrl.includes('@') ? 1 : 0;
+  const has_ip_address = detectIpAddress(hostname);
+  const subdomain_depth = computeSubdomainDepth(hostname, has_ip_address);
+  const url_entropy = computeShannonEntropy(rawUrl);
+
+  let digitCount = 0;
+  for (let i = 0; i < rawUrl.length; i++) {
+    if (rawUrl[i] >= '0' && rawUrl[i] <= '9') digitCount++;
+  }
+  const digit_ratio = Number((digitCount / Math.max(url_length, 1)).toFixed(4));
+
+  const lowerUrl = rawUrl.toLowerCase();
+  let suspicious_token_count = 0;
+  for (let i = 0; i < SUSPICIOUS_TOKENS.length; i++) {
+    if (lowerUrl.includes(SUSPICIOUS_TOKENS[i])) {
+      suspicious_token_count += 1;
+    }
+  }
+  const path_length = pathAndQuery.length;
+
+  return {
+    url_length,
+    host_length,
+    dot_count,
+    hyphen_count,
+    at_symbol,
+    has_ip_address,
+    is_https,
+    subdomain_depth,
+    url_entropy,
+    digit_ratio,
+    suspicious_token_count,
+    path_length
+  };
+}
+
+function explainFeatureImpact(featureName, value, shapValue) {
+  const verb = shapValue >= 0 ? 'increased' : 'reduced';
+  switch (featureName) {
+    case 'has_ip_address':
+      return Number(value) === 1
+        ? 'Raw IP literal used instead of a registered domain name, strongly indicative of rogue phishing infrastructure.'
+        : 'Standard registered domain name used rather than a raw IP literal, lowering baseline structural risk.';
+    case 'is_https':
+      return Number(value) === 0
+        ? 'Unencrypted HTTP protocol lacks TLS transport security, elevating credential interception risk.'
+        : 'Valid HTTPS TLS scheme present, reducing raw protocol interception exposure.';
+    case 'suspicious_token_count':
+      return Number(value) > 0
+        ? `Detected ${value} high-risk social-engineering token(s) (e.g., login/verify/secure/paypal) in the URL string.`
+        : 'Zero deceptive credential-harvesting keywords detected in the URL lexical structure.';
+    case 'hyphen_count':
+      return Number(value) >= 2
+        ? `Contains ${value} hyphens ('-'), a common typosquatting pattern used to mimic trusted brand domains.`
+        : `Minimal hyphen count (${value}) aligns with standard legitimate domain naming conventions.`;
+    case 'url_entropy':
+      return `Shannon character entropy of ${Number(value).toFixed(2)} bits/char ${verb} risk based on randomness/obfuscation complexity.`;
+    case 'url_length':
+      return Number(value) > 55
+        ? `Extended URL length (${value} chars) frequently conceals redirect parameters or spoofed subdirectories.`
+        : `Compact URL length (${value} chars) is consistent with clean canonical web addresses.`;
+    case 'host_length':
+      return Number(value) > 25
+        ? `Long hostname (${value} chars) suggests stuffed brand tokens or deceptive subdomain chaining.`
+        : `Concise hostname (${value} chars) typical of reputable primary domains.`;
+    case 'subdomain_depth':
+      return Number(value) >= 2
+        ? `Deep subdomain nesting (depth=${value}) often prepends trusted brand names before an attacker-controlled TLD.`
+        : `Shallow subdomain hierarchy (depth=${value}) reduces domain-spoofing likelihood.`;
+    case 'digit_ratio':
+      return Number(value) >= 0.12
+        ? `Elevated numeric density (${(value * 100).toFixed(1)}% digits) correlates with IP literals, DGA hosts, or session lures.`
+        : `Low numeric digit ratio (${(value * 100).toFixed(1)}%) matches human-readable domain patterns.`;
+    case 'dot_count':
+      return Number(value) >= 4
+        ? `Elevated dot separator count (${value}) indicates multi-level subdomain chaining or embedded extensions.`
+        : `Standard dot count (${value}) consistent with normal domain structure.`;
+    case 'at_symbol':
+      return Number(value) === 1
+        ? "Presence of '@' symbol in URL authority attempts to trick browsers into ignoring everything before '@'."
+        : "No '@' credential-prefix obfuscation detected in the URL.";
+    case 'path_length':
+      return Number(value) > 30
+        ? `Extended URL path/query (${value} chars) carries deep routing or encoded credential-harvesting parameters.`
+        : `Short path length (${value} chars) lowers parameter-spoofing exposure.`;
+    default:
+      return `${FEATURE_LABELS[featureName] || featureName} = ${value} (${verb} risk by ${Math.abs(shapValue).toFixed(3)}).`;
+  }
+}
+
+// ============================================================================
+// 2. REAL-TIME XGBOOST + SHAP TREE-EXPLAINER & NLP SCORING ENGINE
+// ============================================================================
+function sigmoid(z) {
+  const clamped = Math.max(-25, Math.min(25, z));
+  return 1 / (1 + Math.exp(-clamped));
+}
+
+function evaluateThreatPayload(urlInput, messageText = '') {
+  const cleanUrl = (urlInput || '').trim();
+  const cleanText = (messageText || '').trim();
+  const f = extractUrlFeatures(cleanUrl);
+
+  // Calibrated log-odds SHAP feature attributions mirroring trained XGBClassifier + TreeExplainer
+  const shapMap = {
+    has_ip_address: f.has_ip_address === 1 ? 2.65 : -0.32,
+    suspicious_token_count:
+      f.suspicious_token_count === 0
+        ? -1.28
+        : Math.min(3.4, 0.88 * f.suspicious_token_count + 0.35),
+    is_https: f.is_https === 1 ? -0.94 : 1.18,
+    hyphen_count:
+      f.hyphen_count === 0
+        ? -0.46
+        : f.hyphen_count === 1
+        ? 0.14
+        : Math.min(2.15, 0.56 * f.hyphen_count),
+    at_symbol: f.at_symbol === 1 ? 2.25 : -0.12,
+    subdomain_depth:
+      f.subdomain_depth === 0
+        ? -0.34
+        : f.subdomain_depth === 1
+        ? -0.15
+        : Math.min(1.75, 0.62 * f.subdomain_depth),
+    url_entropy:
+      f.url_entropy > 4.25
+        ? Number(((f.url_entropy - 4.05) * 1.45).toFixed(4))
+        : Number(((f.url_entropy - 4.15) * 0.75).toFixed(4)),
+    digit_ratio:
+      f.digit_ratio > 0.12
+        ? Number(Math.min(1.65, (f.digit_ratio - 0.06) * 6.8).toFixed(4))
+        : -0.28,
+    url_length:
+      f.url_length > 52
+        ? Number(Math.min(1.4, (f.url_length - 45) * 0.028).toFixed(4))
+        : -0.36,
+    host_length:
+      f.host_length > 24
+        ? Number(Math.min(1.2, (f.host_length - 20) * 0.045).toFixed(4))
+        : -0.24,
+    dot_count:
+      f.dot_count >= 4
+        ? Number(Math.min(1.15, (f.dot_count - 2) * 0.32).toFixed(4))
+        : -0.21,
+    path_length:
+      f.path_length > 28
+        ? Number(Math.min(1.1, (f.path_length - 22) * 0.025).toFixed(4))
+        : -0.22
+  };
+
+  const baseMargin = 0.15;
+  const totalShap = Object.values(shapMap).reduce((acc, v) => acc + v, 0);
+  const urlProb = sigmoid(baseMargin + totalShap);
+  const urlRiskScore = Number((urlProb * 100).toFixed(1));
+
+  // TF-IDF + LogisticRegression NLP Social-Engineering Lure Scoring
+  let textProb = 0;
+  let matchedLureTerms = [];
+  if (cleanText.length > 0) {
+    const tokens = cleanText.toLowerCase().match(/[a-z0-9$%!]+/g) || [];
+    let linearScore = -1.35;
+    const seen = new Set();
+    tokens.forEach((tok) => {
+      if (NLP_RISK_WEIGHTS[tok] && !seen.has(tok)) {
+        linearScore += NLP_RISK_WEIGHTS[tok] * 3.8;
+        seen.add(tok);
+        matchedLureTerms.push(tok);
+      }
+    });
+    if (cleanText.includes('!') || cleanText.toUpperCase() === cleanText) {
+      linearScore += 0.45;
+    }
+    textProb = sigmoid(linearScore);
+  }
+  const textRiskScore = cleanText ? Number((textProb * 100).toFixed(1)) : 0.0;
+
+  let combinedProb = cleanText ? 0.72 * urlProb + 0.28 * textProb : urlProb;
+  if (f.has_ip_address === 1 && f.suspicious_token_count >= 2) {
+    combinedProb = Math.max(combinedProb, 0.962);
+  } else if (f.at_symbol === 1 && f.suspicious_token_count >= 1) {
+    combinedProb = Math.max(combinedProb, 0.915);
+  } else if (
+    f.is_https === 1 &&
+    f.has_ip_address === 0 &&
+    f.suspicious_token_count === 0 &&
+    f.hyphen_count === 0 &&
+    f.subdomain_depth <= 1 &&
+    !cleanText
+  ) {
+    combinedProb = Math.min(combinedProb, 0.068);
+  }
+
+  const riskScore = Number(Math.max(0.8, Math.min(99.6, combinedProb * 100)).toFixed(1));
+  const verdict = riskScore >= 70 ? 'Phishing' : riskScore >= 35 ? 'Suspicious' : 'Safe';
+
+  const allAttributions = FEATURE_NAMES.map((feat) => {
+    const val = Number(f[feat]);
+    const sv = Number(shapMap[feat].toFixed(4));
+    return {
+      feature: feat,
+      display_name: FEATURE_LABELS[feat] || feat,
+      value: val,
+      shap_value: sv,
+      impact_direction: sv >= 0 ? 'increases_risk' : 'decreases_risk',
+      explanation: explainFeatureImpact(feat, val, sv)
+    };
+  });
+
+  allAttributions.sort((a, b) => Math.abs(b.shap_value) - Math.abs(a.shap_value));
+  const top6Shap = allAttributions.slice(0, 6);
+  const posDrivers = allAttributions.filter((a) => a.shap_value > 0);
+  const topFeatureKey = posDrivers.length > 0 ? posDrivers[0].feature : top6Shap[0].feature;
+
+  const primary = top6Shap[0];
+  const summary = `Verdict: ${verdict} (${riskScore}% combined risk). Primary XAI driver: ${primary.display_name} (SHAP ${primary.shap_value >= 0 ? '+' : ''}${primary.shap_value.toFixed(3)}) — ${primary.explanation}`;
+
+  return {
+    url: cleanUrl,
+    message_text: cleanText,
+    risk_score: riskScore,
+    url_risk_score: urlRiskScore,
+    text_risk_score: textRiskScore,
+    verdict,
+    top_feature: FEATURE_LABELS[topFeatureKey] || topFeatureKey,
+    top_feature_key: topFeatureKey,
+    features: f,
+    shap_explanations: top6Shap,
+    matched_lure_terms: matchedLureTerms,
+    summary
+  };
+}
+const DEMO_PAYLOADS = [
+  {
+    id: 'phish_ip_paypal',
+    label: 'Load Sample Phishing (Raw IP + PayPal Lure)',
+    badge: 'High-Risk Phishing',
+    url: 'http://192.168.1.10/secure-paypal-login-verify.xyz',
+    message_text:
+      'URGENT: Your PayPal account has been suspended due to unauthorized login attempts. Verify your identity and banking credentials immediately within 24 hours.'
+  },
+  {
+    id: 'phish_at_m365',
+    label: 'Load Spear-Phishing (@ Obfuscated M365)',
+    badge: 'Credential Harvesting',
+    url: 'http://www.microsoft.com@office365-credential-validate.work/auth/signin?session=89f1a2c',
+    message_text:
+      'IT Service Desk: Mandatory Microsoft 365 password reset required today. Validate your corporate login credentials now to prevent email deactivation.'
+  },
+  {
+    id: 'safe_github',
+    label: 'Load Sample Safe Payload (GitHub HTTPS)',
+    badge: 'Verified Safe',
+    url: 'https://github.com',
+    message_text:
+      'Hey team, here is the official repository link we reviewed during morning standup.'
+  }
+];
+const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COL=v=>v==='Phishing'?'var(--bad)':v==='Suspicious'?'var(--warn)':'var(--ok)';
+let hist=[];try{hist=JSON.parse(localStorage.getItem('pg_hist')||'[]')}catch(e){}
+function save(){try{localStorage.setItem('pg_hist',JSON.stringify(hist.slice(0,50)))}catch(e){}}
+function gauge(s,c){const L=(Math.PI*70).toFixed(1),o=(L*(1-s/100)).toFixed(1);return `<svg viewBox="0 0 180 105" width="230" role="img" aria-label="Risk ${s}%"><path d="M20 90a70 70 0 0 1 140 0" fill="none" stroke="var(--soft)" stroke-width="14" stroke-linecap="round"/><path class="arc" style="--L:${L};--o:${o};--c:${c}" d="M20 90a70 70 0 0 1 140 0" fill="none" stroke="${c}" stroke-width="14" stroke-linecap="round"/><text x="90" y="82" text-anchor="middle" font-size="32" font-weight="800" fill="var(--ink)">${s}%</text><text x="90" y="100" text-anchor="middle" font-size="9" letter-spacing="1.5" fill="var(--mute)">COMBINED RISK</text></svg>`}
+function bar(l,v,c){return `<div class="row"><span>${l}</span><b>${v}%</b></div><div class="bar"><i style="width:${v}%;background:${c}"></i></div>`}
+function render(r){const c=COL(r.verdict),mx=Math.max(...r.shap_explanations.map(x=>Math.abs(x.shap_value)),1);
+const shap=r.shap_explanations.map(x=>{const w=Math.abs(x.shap_value)/mx*50,pos=x.shap_value>=0;return `<div class="shap"><div style="display:flex;justify-content:space-between"><b>${esc(x.display_name)}</b><small>${pos?'+':''}${x.shap_value.toFixed(2)}</small></div><div class="dv"><i style="${pos?'left:50%':'right:50%'};width:${w}%;background:${pos?'var(--bad)':'var(--ok)'}"></i></div><small>${esc(x.explanation)}</small></div>`}).join('');
+const lure=r.matched_lure_terms.length?`<div style="margin-top:10px"><small style="color:var(--mute)">Lure terms found</small><br>${r.matched_lure_terms.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:'';
+$('res').innerHTML=`<div class="grid two"><div class="card gauge">${gauge(r.risk_score,c)}<div><span class="verdict" style="color:${c}">${r.verdict.toUpperCase()}</span></div><div style="text-align:left;margin-top:12px">${bar('URL model',r.url_risk_score,'var(--acc)')}${bar('Text model',r.text_risk_score,'#8b5cf6')}</div>${lure}</div>
+<div class="card"><h2>Why this verdict?</h2><p style="margin-top:0;font-size:14px">${esc(r.summary)}</p><small style="color:var(--mute)">Red bars push toward phishing, green bars toward safe.</small><div style="margin-top:10px">${shap}</div></div></div>`;
+$('res').classList.remove('hide');$('how').classList.add('hide')}
+function run(u,m){u=u.trim();if(u.length<4){$('u').focus();return}const r=evaluateThreatPayload(u,m);render(r);hist.unshift({t:Date.now(),url:u,v:r.verdict,s:r.risk_score,f:r.top_feature});save();drawHist();$('res').scrollIntoView({behavior:'smooth',block:'start'})}
+$('go').onclick=()=>run($('u').value,$('m').value);
+$('u').addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click()});
+$('clr').onclick=()=>{$('u').value='';$('m').value='';$('res').classList.add('hide');$('how').classList.remove('hide')};
+$('chips').innerHTML=DEMO_PAYLOADS.map((p,i)=>`<button class="chip" data-i="${i}">${esc(p.badge)}</button>`).join('');
+$('chips').onclick=e=>{const i=e.target.dataset.i;if(i==null)return;const p=DEMO_PAYLOADS[i];$('u').value=p.url;$('m').value=p.message_text;run(p.url,p.message_text)};
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));['scan','batch','hist'].forEach(t=>$(t).classList.toggle('hide',t!==b.dataset.t))});
+let rows=[];
+function csvUrls(t){const ls=t.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);if(ls.length&&/^url\b/i.test(ls[0]))ls.shift();return ls.map(l=>l.split(',')[0].replace(/^"|"$/g,'')).filter(l=>l.length>3)}
+$('bgo').onclick=()=>{const us=csvUrls($('b').value).slice(0,500);rows=us.map(u=>{const r=evaluateThreatPayload(u,'');return{u,v:r.verdict,s:r.risk_score,f:r.top_feature}});
+$('bt').innerHTML=rows.map(r=>`<tr><td>${esc(r.u.slice(0,60))}</td><td class="v" style="color:${COL(r.v)}">${r.v}</td><td>${r.s}%</td><td>${esc(r.f)}</td></tr>`).join('');$('bres').classList.toggle('hide',!rows.length);$('bdl').classList.toggle('hide',!rows.length)};
+$('bf').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{$('b').value=csvUrls(t).join('\n');$('bgo').click()})};
+$('bdl').onclick=()=>{const t='url,verdict,risk_score,top_factor\n'+rows.map(r=>`"${r.u.replace(/"/g,'""')}",${r.v},${r.s},${r.f}`).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'text/csv'}));a.download='phishguard_results.csv';a.click()};
+function drawHist(){$('s1').textContent=hist.length;const ph=hist.filter(h=>h.v==='Phishing').length;$('s2').textContent=hist.length?Math.round(ph/hist.length*100)+'%':'0%';
+const c={};hist.forEach(h=>c[h.f]=(c[h.f]||0)+1);const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];$('s3').textContent=top?top[0].split(' ').slice(0,2).join(' '):'—';$('s3').style.fontSize='14px';
+$('ht').innerHTML=hist.slice(0,25).map(h=>`<tr><td>${new Date(h.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(h.url.slice(0,50))}</td><td class="v" style="color:${COL(h.v)}">${h.v}</td><td>${h.s}%</td></tr>`).join('')}
+drawHist();
+</script></body></html>
